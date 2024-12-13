@@ -1,18 +1,44 @@
 const socket = io('http://localhost:3000');
 
 // Elementos del DOM
+const loginForm = document.getElementById('login-form');
+const registerForm = document.getElementById('register-form');
 const messageForm = document.getElementById('send-container');
 const messageInput = document.getElementById('message-input');
 const messageContainer = document.getElementById('message-container');
+const authContainer = document.getElementById('auth-container');
 const chatContainer = document.getElementById('chat-container');
+const cerrarSesionBtt = document.querySelector('.cerrar-sesion-btt');
 const selectGrupo = document.getElementById('select-grupo');
 const unirseGrupoBtt = document.querySelector('.unirse-grupo-btt');
 const crearGrupoBtt = document.querySelector('.crear-grupo-btt');
 
-
 let username = '';  // Variable para guardar el nombre de usuario
 let currentGroup = '';  // Almacenar el grupo actual en el que el usuario está
 
+// Login
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const loginUsername = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+
+    const response = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `username=${loginUsername}&password=${password}`,
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        username = data.username;
+        alert('Inicio de sesión exitoso');
+        authContainer.style.display = 'none';
+        chatContainer.style.display = 'block';
+        cargarGrupos();  // Cargar los grupos disponibles
+    } else {
+        alert('Error al iniciar sesión');
+    }
+});
 
 // Cargar grupos
 async function cargarGrupos() {
@@ -51,6 +77,7 @@ unirseGrupoBtt.addEventListener('click', async () => {
     }
 });
 
+
 // Enviar mensaje
 messageForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -74,7 +101,14 @@ function appendMessage(mensaje) {
     messageContainer.appendChild(messageElement);
 }
 
-// Crear grupo
+// Cerrar sesión
+cerrarSesionBtt.addEventListener('click', () => {
+    socket.emit('logout', username);
+    username = '';
+    authContainer.style.display = 'block';
+    chatContainer.style.display = 'none';
+    alert('Sesión cerrada');
+});
 crearGrupoBtt.addEventListener('click', async () => {
     const groupName = prompt("Ingresa el nombre del nuevo grupo:");
 
@@ -94,28 +128,3 @@ crearGrupoBtt.addEventListener('click', async () => {
         }
     }
 });
-
-// Cargar usuarios registrados
-// Cargar usuarios registrados (ya tienes este código)
-async function cargarUsuarios() {
-    const response = await fetch('/usuarios');
-    const usuarios = await response.json();
-
-    // Filtrar el usuario actual
-    const usuariosFiltrados = usuarios
-        .filter(usuario => usuario.username !== username)  // Filtrar por nombre de usuario
-        .map(usuario => usuario.username);  // Extraer solo los nombres de usuario
-
-    // Mostrar los usuarios en el select
-    const selectUsuario = document.getElementById('select-usuario');
-    selectUsuario.innerHTML = '<option value="">Selecciona un usuario</option>';
-
-    usuariosFiltrados.forEach(usuario => {
-        const option = document.createElement('option');
-        option.value = usuario;  // Valor del <option> es el nombre de usuario
-        option.textContent = usuario;  // Texto que se muestra es el nombre de usuario
-        selectUsuario.appendChild(option);
-    });
-}
-
-
